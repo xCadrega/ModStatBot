@@ -4,10 +4,14 @@ import com.google.gson.annotations.SerializedName;
 
 public class Data {
     @SerializedName("data")
-    private String logData;
+    private String data;
+
+    public Data(String data) {
+        this.data = data;
+    }
 
     public String getData() {
-        return logData;
+        return data;
     }
 
 }
