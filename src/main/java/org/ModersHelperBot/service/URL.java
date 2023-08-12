@@ -9,18 +9,14 @@ import org.apache.http.impl.client.HttpClients;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.List;
 
 public class URL {
     private final long chatId;
     private String url;
-    private final TelegramBot bot;
 
     public URL(long chatId, String url) {
         this.chatId = chatId;
         this.url = url;
-        this.bot = new TelegramBot();
     }
 
     public void setURL(String anotherURL) {
@@ -49,12 +45,12 @@ public class URL {
                 if (!isValidLink(urls[i])) {
                     String fullogs = parseJson(urls[0]);
                     Logs logs = new Logs(fullogs);
-                    List<String> allOccurrences = Arrays.asList(logs.occurrencesOfCommand(urls[i]).split("\\n"));
+                    String[] allOccurrences = logs.occurrencesOfCommand(urls[i]).split("\\n");
                     String logsForSend = "";
                     int logsCount = 0;
                     for (String occurrence : allOccurrences) {
                         if (logsCount == 24) {
-                            bot.sendMessage(chatId, logsForSend);
+                            TelegramBot.sendMessage(chatId, logsForSend);
                             logsForSend = "";
                             logsCount = 0;
                         }
@@ -62,7 +58,7 @@ public class URL {
                         logsCount++;
                     }
                     if (logsForSend.length() > 0) {
-                        bot.sendMessage(chatId, logsForSend);
+                        TelegramBot.sendMessage(chatId, logsForSend);
                     }
                 } else {
                     linksExtraction(urls);
@@ -109,7 +105,7 @@ public class URL {
             Data data = gson.fromJson(reader, Data.class);
             String allData = data.getData();
             if (allData == null) {
-                bot.sendMessage(chatId, "Страница пуста");
+                TelegramBot.sendMessage(chatId, "Страница пуста");
             } else {
                 return allData;
             }
@@ -178,6 +174,6 @@ public class URL {
                 (warns != 0 ? "Варны: " + warns + "\n" : "Нет выданных варнов\n") +
                 (bans != 0 ? "Баны: " + bans + "\n" : "Нет выданных банов\n") +
                 (mutes != 0 ? "Муты: " + mutes + "\n" : "Нет выданных мутов\n");
-        bot.sendMessage(chatId, statistic);
+        TelegramBot.sendMessage(chatId, statistic);
     }
 }
