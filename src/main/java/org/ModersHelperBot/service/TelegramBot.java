@@ -9,6 +9,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TelegramBot extends TelegramLongPollingBot {
+    private static TelegramBot TELEGRAM_BOT = null;
+
+    public TelegramBot() {
+        TELEGRAM_BOT = this;
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
@@ -29,8 +35,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                         url.urlProcessing();
                     } else if (messageText.startsWith("Держи логи игрока")) {
                         String urls = "";
-                        String regexPattern = "(https?://\\S+)";
-                        Pattern pattern = Pattern.compile(regexPattern);
+                        Pattern pattern = Pattern.compile("(https?://\\S+)");
                         Matcher matcher = pattern.matcher(messageText);
                         int start = 0;
                         while (matcher.find(start)) {
@@ -45,25 +50,25 @@ public class TelegramBot extends TelegramLongPollingBot {
                         url.setURL(urls);
                         url.urlProcessing();
                     } else {
-                            String answer = "Я не вижу здесь ссылки, а вы?";
-                            sendMessage(chatId, answer);
-                        }
+                        String answer = "Я не вижу здесь ссылки, а вы?";
+                        sendMessage(chatId, answer);
+                    }
                 }
             }
         }
     }
 
-    private void startCommandReceived(long chatId, String firstName) throws TelegramApiException {
+    private static void startCommandReceived(long chatId, String firstName) throws TelegramApiException {
         String answer = "Привет, " + firstName + "!";
         sendMessage(chatId, answer);
     }
 
-    public void sendMessage(long chatId, String textToSend) {
+    public static void sendMessage(long chatId, String textToSend) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
         message.setText(textToSend);
         try {
-            execute(message);
+            TELEGRAM_BOT.execute(message);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
