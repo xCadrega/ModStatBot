@@ -9,6 +9,8 @@ import org.apache.http.impl.client.HttpClients;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class URL {
     private final long chatId;
@@ -19,33 +21,56 @@ public class URL {
         this.url = url;
     }
 
-    public void setURL(String anotherURL) {
-        this.url = anotherURL;
+    private void setUrl(String anotherUrl) {
+        this.url = anotherUrl;
+    }
+
+    public void urlsExtraction(String message) {
+        String urls = "";
+        Pattern pattern = Pattern.compile("(https?://\\S+)");
+        Matcher matcher = pattern.matcher(message);
+        int start = 0;
+        while (matcher.find(start)) {
+            String foundedUrl = matcher.group();
+            if (start == 0) {
+                urls += foundedUrl;
+            } else {
+                urls += "\n" + foundedUrl;
+            }
+            start = matcher.end();
+        }
+        setUrl(urls);
+        urlProcessing();
+    }
+
+    public boolean isValidUrl(String url) {
+        return (url.startsWith("https://paste.mineland") ||
+                url.startsWith("paste.mineland"));
     }
 
     public void urlProcessing() {
         String[] urls;
-        if (url.length() > 50) {
+        if (url.length() > 42) {
             if (url.contains("\n")) {
-                urls = checkCorrectURL(url, "\n");
-                URLAndCommandExtraction(urls);
+                urls = correctUrls(url, "\n");
+                urlAndCommandExtraction(urls);
             } else if (url.contains(" ")) {
-                urls = checkCorrectURL(url, " ");
-                URLAndCommandExtraction(urls);
+                urls = correctUrls(url, " ");
+                urlAndCommandExtraction(urls);
             }
         } else {
-            linkExtraction(url);
+            extractionLogsFromUrl(url);
         }
     }
 
-    private void URLAndCommandExtraction(String[] urls) {
+    private void urlAndCommandExtraction(String[] urls) {
         urls[0] = urls[0].trim();
         if (urls.length > 1) {
             for (int i = 1; i < urls.length; i++) {
-                if (!isValidLink(urls[i])) {
+                if (!isValidUrl(urls[i])) {
                     String fullogs = parseJson(urls[0]);
                     Logs logs = new Logs(fullogs);
-                    String[] allOccurrences = logs.occurrencesOfCommand(urls[i]).split("\\n");
+                    String[] allOccurrences = logs.getOccurrencesOfCommand(urls[i]).split("\\n");
                     String logsForSend = "";
                     int logsCount = 0;
                     for (String occurrence : allOccurrences) {
@@ -61,33 +86,22 @@ public class URL {
                         TelegramBot.sendMessage(chatId, logsForSend);
                     }
                 } else {
-                    linksExtraction(urls);
+                    extractionLogsFromUrls(urls);
                     break;
                 }
             }
         }
     }
 
-    private String[] checkCorrectURL(String url, String regex) {
+    private String[] correctUrls(String url, String regex) {
         String[] urls = url.split(regex);
         int length = urls.length;
-        if (length > 1) {
-            for (int index = 0; index < length; index++) {
-                if (urls[index].startsWith("paste")) {
-                    urls[index] = httpAdd(urls[index]);
-                }
+        for (int index = 0; index < length; index++) {
+            if (urls[index].startsWith("paste")) {
+                urls[index] = "https://" + urls[index];
             }
         }
         return urls;
-    }
-
-    public String httpAdd(String url) {
-        return "https://" + url;
-    }
-
-    public boolean isValidLink(String url) {
-        return (url.startsWith("https://paste.mineland") ||
-                url.startsWith("paste.mineland"));
     }
 
     private String parseJson(String url) {
@@ -115,17 +129,17 @@ public class URL {
         return url;
     }
 
-    private void linksExtraction(String[] urls) {
-        if (isValidLink(urls[1])) {
+    private void extractionLogsFromUrls(String[] urls) {
+        if (isValidUrl(urls[1])) {
             String fullogs = parseJson(urls[0]);
             String mhistory = parseJson(urls[1]);
             collectStatistic(fullogs, mhistory);
         }
     }
 
-    private void linkExtraction(String url) {
+    private void extractionLogsFromUrl(String url) {
         if (url.startsWith("paste.mineland")) {
-            url = httpAdd(url);
+            url = "https://" + url;
         }
         String fullogs = parseJson(url);
         collectStatistic(fullogs, fullogs);
@@ -137,17 +151,19 @@ public class URL {
         String nickname = reportsAndWarns[0];
         int reports = Integer.parseInt(reportsAndWarns[1]);
         int warns = Integer.parseInt(reportsAndWarns[2]);
+        // если был отправлен mhistory, в котором хранятся муты и баны
         if (reports == 0 && warns == 0) {
             reportsAndWarns = countingReportsAndWarns(mhistory);
             reports = Integer.parseInt(reportsAndWarns[1]);
             warns = Integer.parseInt(reportsAndWarns[2]);
         }
-        int bans = Integer.parseInt(bansAndMutes[1]);
-        int mutes = Integer.parseInt(bansAndMutes[2]);
+        int bans = Integer.parseInt(bansAndMutes[0]);
+        int mutes = Integer.parseInt(bansAndMutes[1]);
+        // если был отправлен fullogs, в котором хранятся репорты и варны
         if (bans == 0 && mutes == 0) {
             bansAndMutes = countingBansAndMutes(fullogs);
-            bans = Integer.parseInt(bansAndMutes[1]);
-            mutes = Integer.parseInt(bansAndMutes[2]);
+            bans = Integer.parseInt(bansAndMutes[0]);
+            mutes = Integer.parseInt(bansAndMutes[1]);
         }
         sendStatistic(nickname, bans, mutes, reports, warns);
     }
@@ -162,10 +178,9 @@ public class URL {
 
     private String[] countingBansAndMutes(String mhistory) {
         Logs logs = new Logs(mhistory);
-        String nickname = logs.getNickname();
         int bans = logs.countOfBans();
         int mutes = logs.countOfMutes();
-        return new String[] {nickname, String.valueOf(bans), String.valueOf(mutes)};
+        return new String[] {String.valueOf(bans), String.valueOf(mutes)};
     }
 
     private void sendStatistic(String nickname, int bans, int mutes, int reports, int warns) {

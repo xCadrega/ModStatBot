@@ -27,14 +27,14 @@ public class Logs {
         fillDays();
     }
 
-    public void fillDays() {
+    private void fillDays() {
         for (int index = 0; index < 7; index++) {
             dates[index] = startOfWeek.format(dateFormatter);
             startOfWeek = startOfWeek.plusDays(1);
         }
     }
 
-    public String readNickname() {
+    private String readNickname() {
         return logs.stream()
                 .map(log -> log.split(" "))
                 .findFirst()
@@ -98,7 +98,7 @@ public class Logs {
         return count;
     }
 
-    public String occurrencesOfCommand(String command) {
+    public String getOccurrencesOfCommand(String command) {
         return logs.stream().filter(log -> log.contains(command)).collect(Collectors.joining("\n"));
     }
 }
