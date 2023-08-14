@@ -1,7 +1,6 @@
 package org.ModersHelperBot.service;
 
 import com.google.gson.Gson;
-import lombok.Setter;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -18,8 +17,8 @@ import java.util.regex.Pattern;
 
 public class URL {
     private final long chatId;
-    @Setter private String url;
-    @Setter private String commands;
+    private String url;
+    private String commands;
 
     public URL(long chatId, String url) {
         this.chatId = chatId;
