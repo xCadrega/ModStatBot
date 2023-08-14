@@ -1,6 +1,7 @@
 package org.ModersHelperBot.service;
 
 import com.google.gson.Gson;
+import lombok.Setter;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -9,25 +10,27 @@ import org.apache.http.impl.client.HttpClients;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class URL {
     private final long chatId;
-    private String url;
+    @Setter private String url;
+    @Setter private String commands;
 
     public URL(long chatId, String url) {
         this.chatId = chatId;
         this.url = url;
+        this.commands = "";
     }
 
-    private void setUrl(String anotherUrl) {
-        this.url = anotherUrl;
-    }
-
-    public void urlsExtraction(String message) {
+    public void urlsAndCommandsExtraction(String message) {
         String urls = "";
-        Pattern pattern = Pattern.compile("(https?://\\S+)");
+        String command = "";
+        Pattern pattern = Pattern.compile("(paste.mineland\\.\\S+)|(https?://paste.mineland\\.\\S+)");
         Matcher matcher = pattern.matcher(message);
         int start = 0;
         while (matcher.find(start)) {
@@ -39,62 +42,56 @@ public class URL {
             }
             start = matcher.end();
         }
-        setUrl(urls);
-        urlProcessing();
+        command += "\n" + message.substring(start);
+        List<String> allCommands = new ArrayList<>(Arrays.asList(command.split("\n")));
+        allCommands.removeIf(userCommand -> userCommand.isEmpty() || userCommand.contains("Держи логи игрока"));
+        commands = String.join("\n", allCommands);
+        urlProcessing(urls);
     }
 
-    public boolean isValidUrl(String url) {
-        return (url.startsWith("https://paste.mineland") ||
-                url.startsWith("paste.mineland"));
-    }
-
-    public void urlProcessing() {
-        String[] urls;
-        if (url.length() > 42) {
-            if (url.contains("\n")) {
-                urls = correctUrls(url, "\n");
-                urlAndCommandExtraction(urls);
-            } else if (url.contains(" ")) {
-                urls = correctUrls(url, " ");
-                urlAndCommandExtraction(urls);
+    public void urlProcessing(String userUrls) {
+        String[] urls = correctUrls(userUrls);
+        int length = urls.length;
+        if (length == 1 && commands.isEmpty()) {
+            collectStatistic(parseJson(urls[0]), parseJson(urls[0]));
+        } else if (length == 2 && commands.isEmpty()) {
+            collectStatistic(parseJson(urls[0]), parseJson(urls[1]));
+        } else if (length % 2 == 0 && commands.isEmpty()) {
+            for (int urlCount = 0; urlCount < length; urlCount++) {
+                collectStatistic(parseJson(urls[urlCount]), parseJson(urls[++urlCount]));
             }
         } else {
-            extractionLogsFromUrl(url);
+            logsWithCommandsExtraction(urls);
         }
     }
 
-    private void urlAndCommandExtraction(String[] urls) {
-        urls[0] = urls[0].trim();
-        if (urls.length > 1) {
-            for (int i = 1; i < urls.length; i++) {
-                if (!isValidUrl(urls[i])) {
-                    String fullogs = parseJson(urls[0]);
-                    Logs logs = new Logs(fullogs);
-                    String[] allOccurrences = logs.getOccurrencesOfCommand(urls[i]).split("\\n");
-                    String logsForSend = "";
-                    int logsCount = 0;
-                    for (String occurrence : allOccurrences) {
-                        if (logsCount == 24) {
-                            TelegramBot.sendMessage(chatId, logsForSend);
-                            logsForSend = "";
-                            logsCount = 0;
-                        }
-                        logsForSend += occurrence + "\n";
-                        logsCount++;
-                    }
-                    if (logsForSend.length() > 0) {
+    private void logsWithCommandsExtraction(String[] urls) {
+        String[] userCommands = commands.split("\n");
+        for (String userCommand : userCommands) {
+            String logsForSend = "";
+            int logsCount = 0;
+            for (String url : urls) {
+                String fullLogs = parseJson(url);
+                Logs logs = new Logs(fullLogs);
+                String[] allOccurrences = logs.getOccurrencesOfCommand(userCommand).split("\\n");
+                for (String occurrence : allOccurrences) {
+                    if (logsCount == 24) {
                         TelegramBot.sendMessage(chatId, logsForSend);
+                        logsForSend = "";
+                        logsCount = 0;
                     }
-                } else {
-                    extractionLogsFromUrls(urls);
-                    break;
+                    logsForSend += occurrence + "\n";
+                    logsCount++;
                 }
+            }
+            if (logsForSend.length() > 0) {
+                TelegramBot.sendMessage(chatId, logsForSend);
             }
         }
     }
 
-    private String[] correctUrls(String url, String regex) {
-        String[] urls = url.split(regex);
+    private String[] correctUrls(String url) {
+        String[] urls = url.split("\n");
         int length = urls.length;
         for (int index = 0; index < length; index++) {
             if (urls[index].startsWith("paste")) {
@@ -111,12 +108,10 @@ public class URL {
             url = url.substring(0, 27) + "documents/" + url.substring(27);
         }
         CloseableHttpClient httpClient = HttpClients.createDefault();
-        HttpGet httpGet = new HttpGet(url);
-        try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+        try (CloseableHttpResponse response = httpClient.execute(new HttpGet(url))) {
             HttpEntity entity = response.getEntity();
             BufferedReader reader = new BufferedReader(new InputStreamReader(entity.getContent()));
-            Gson gson = new Gson();
-            Data data = gson.fromJson(reader, Data.class);
+            Data data = new Gson().fromJson(reader, Data.class);
             String allData = data.getData();
             if (allData == null) {
                 TelegramBot.sendMessage(chatId, "Страница пуста");
@@ -127,22 +122,6 @@ public class URL {
             e.printStackTrace();
         }
         return url;
-    }
-
-    private void extractionLogsFromUrls(String[] urls) {
-        if (isValidUrl(urls[1])) {
-            String fullogs = parseJson(urls[0]);
-            String mhistory = parseJson(urls[1]);
-            collectStatistic(fullogs, mhistory);
-        }
-    }
-
-    private void extractionLogsFromUrl(String url) {
-        if (url.startsWith("paste.mineland")) {
-            url = "https://" + url;
-        }
-        String fullogs = parseJson(url);
-        collectStatistic(fullogs, fullogs);
     }
 
     private void collectStatistic(String fullogs, String mhistory) {

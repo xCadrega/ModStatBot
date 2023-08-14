@@ -5,8 +5,10 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import javax.validation.constraints.NotNull;
+
 public class TelegramBot extends TelegramLongPollingBot {
-    private static TelegramBot TELEGRAM_BOT = null;
+    private static @NotNull TelegramBot TELEGRAM_BOT;
 
     public TelegramBot() {
         TELEGRAM_BOT = this;
@@ -26,11 +28,9 @@ public class TelegramBot extends TelegramLongPollingBot {
                         e.printStackTrace();
                     }
                 } default: {
-                    URL url = new URL(chatId, message);
-                    if (url.isValidUrl(message)) {
-                        url.urlProcessing();
-                    } else if (message.contains("paste.mineland")) {
-                        url.urlsExtraction(message);
+                    if (message.contains("paste.mineland")) {
+                        URL url = new URL(chatId, message);
+                        url.urlsAndCommandsExtraction(message);
                     } else {
                         String answer = "Я не вижу здесь ссылки, а вы?";
                         sendMessage(chatId, answer);

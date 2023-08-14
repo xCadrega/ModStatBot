@@ -1,5 +1,7 @@
 package org.ModersHelperBot.service;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -7,7 +9,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class Logs {
-    private final String nickname;
+    @Getter private final String nickname;
     private final List<String> logs;
     private final String[] dates;
     private final int year;
@@ -40,11 +42,6 @@ public class Logs {
                 .findFirst()
                 .map(elements -> elements.length > 3 ? elements[3] : "")
                 .orElse("");
-    }
-
-
-    public String getNickname() {
-        return nickname;
     }
 
     public int countOfWarns() {
