@@ -86,8 +86,7 @@ public class Url {
             for (String url : urls) {
                 String fullLogs = parseJson(url);
                 Logs logs = new Logs(fullLogs);
-                String nickname = logs.getNickname();
-                logsForSend += "Найденные вхождения команд " + nickname + ":\n\n";
+                logsForSend += "Найденные вхождения команд " + logs.getNickname() + ":\n\n";
                 String[] allOccurrences = logs.getOccurrencesOfCommand(userCommand).split("\\n");
                 for (String occurrence : allOccurrences) {
                     if (logsCount == 24) {
@@ -107,8 +106,7 @@ public class Url {
 
     private String[] correctUrls(String url) {
         String[] urls = url.split("\n");
-        int length = urls.length;
-        for (int index = 0; index < length; index++) {
+        for (int index = 0; index < urls.length; index++) {
             if (urls[index].startsWith("paste")) {
                 urls[index] = "https://" + urls[index];
             }
@@ -127,11 +125,10 @@ public class Url {
             connection.setRequestMethod("GET");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                 Data data = new Gson().fromJson(reader, Data.class);
-                String allData = data.getData();
-                if (allData == null) {
+                if (data.getData() == null) {
                     TelegramBot.sendMessage(chatId, "Страница пуста");
                 } else {
-                    return allData;
+                    return data.getData();
                 }
             }
         } catch (Exception e) {
@@ -139,7 +136,6 @@ public class Url {
         }
         return url;
     }
-
 
     private void collectStatistic(String fullogs, String mhistory) {
         String[] reportsAndWarns = countingReportsAndWarns(fullogs);
@@ -166,10 +162,9 @@ public class Url {
 
     private String[] countingReportsAndWarns(String fullogs) {
         Logs logs = new Logs(fullogs);
-        String nickname = logs.getNickname();
         int reports = logs.countOfReports();
         int warns = logs.countOfWarns();
-        return new String[] {nickname, String.valueOf(reports), String.valueOf(warns)};
+        return new String[] {logs.getNickname(), String.valueOf(reports), String.valueOf(warns)};
     }
 
     private String[] countingBansAndMutes(String mhistory) {
