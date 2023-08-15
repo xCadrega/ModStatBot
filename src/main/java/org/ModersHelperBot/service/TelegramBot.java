@@ -29,7 +29,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     }
                 } default: {
                     if (message.contains("paste.mineland")) {
-                        URL url = new URL(chatId, message);
+                        Url url = new Url(chatId, message);
                         url.urlsAndCommandsExtraction(message);
                     } else {
                         String answer = "Я не вижу здесь ссылки, а вы?";
@@ -57,11 +57,11 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     public String getBotToken() {
-        return "token";
+        return "6517224899:AAF5YK650WJfp8mqpzsuYGOb7iXLzuQvUAY";
     }
 
     @Override
     public String getBotUsername() {
-        return "username";
+        return "polygot_for_tests_bot";
     }
 }

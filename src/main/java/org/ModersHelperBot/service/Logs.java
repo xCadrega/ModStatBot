@@ -17,9 +17,8 @@ public class Logs {
     public Logs(String data) {
         this.logs = Arrays.asList(data.split("\\n"));
         this.nickname = readNickname();
-        LocalDate currentDate = LocalDate.now();
-        int dayOfWeek = currentDate.getDayOfWeek().getValue();
-        LocalDate endOfWeek = currentDate.minusDays(dayOfWeek + 1);
+        int dayOfWeek = LocalDate.now().getDayOfWeek().getValue();
+        LocalDate endOfWeek = LocalDate.now().minusDays(dayOfWeek + 1);
         this.year = LocalDate.now().getYear();
         this.startOfWeek = endOfWeek.minusDays(6);
         this.dateFormatter = DateTimeFormatter.ofPattern("dd.MM");

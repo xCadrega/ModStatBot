@@ -1,29 +1,42 @@
 package org.ModersHelperBot.service;
 
 import com.google.gson.Gson;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class URL {
+public class Url {
     private final long chatId;
     private String url;
     private String commands;
 
-    public URL(long chatId, String url) {
+    public Url(long chatId, String url) {
         this.chatId = chatId;
         this.url = url;
         this.commands = "";
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getCommands() {
+        return commands;
+    }
+
+    public void setCommands(String commands) {
+        this.commands = commands;
     }
 
     public void urlsAndCommandsExtraction(String message) {
@@ -44,12 +57,13 @@ public class URL {
         command += "\n" + message.substring(start);
         List<String> allCommands = new ArrayList<>(Arrays.asList(command.split("\n")));
         allCommands.removeIf(userCommand -> userCommand.isEmpty() || userCommand.contains("Держи логи игрока"));
-        commands = String.join("\n", allCommands);
-        urlProcessing(urls);
+        setUrl(urls);
+        setCommands(String.join("\n", allCommands));
+        urlProcessing();
     }
 
-    public void urlProcessing(String userUrls) {
-        String[] urls = correctUrls(userUrls);
+    public void urlProcessing() {
+        String[] urls = correctUrls(getUrl());
         int length = urls.length;
         if (length == 1 && commands.isEmpty()) {
             collectStatistic(parseJson(urls[0]), parseJson(urls[0]));
@@ -65,13 +79,15 @@ public class URL {
     }
 
     private void logsWithCommandsExtraction(String[] urls) {
-        String[] userCommands = commands.split("\n");
+        String[] userCommands = getCommands().split("\n");
         for (String userCommand : userCommands) {
             String logsForSend = "";
             int logsCount = 0;
             for (String url : urls) {
                 String fullLogs = parseJson(url);
                 Logs logs = new Logs(fullLogs);
+                String nickname = logs.getNickname();
+                logsForSend += "Найденные вхождения команд " + nickname + ":\n\n";
                 String[] allOccurrences = logs.getOccurrencesOfCommand(userCommand).split("\\n");
                 for (String occurrence : allOccurrences) {
                     if (logsCount == 24) {
@@ -106,16 +122,17 @@ public class URL {
         } else if (url.contains(".net")) {
             url = url.substring(0, 27) + "documents/" + url.substring(27);
         }
-        CloseableHttpClient httpClient = HttpClients.createDefault();
-        try (CloseableHttpResponse response = httpClient.execute(new HttpGet(url))) {
-            HttpEntity entity = response.getEntity();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(entity.getContent()));
-            Data data = new Gson().fromJson(reader, Data.class);
-            String allData = data.getData();
-            if (allData == null) {
-                TelegramBot.sendMessage(chatId, "Страница пуста");
-            } else {
-                return allData;
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setRequestMethod("GET");
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                Data data = new Gson().fromJson(reader, Data.class);
+                String allData = data.getData();
+                if (allData == null) {
+                    TelegramBot.sendMessage(chatId, "Страница пуста");
+                } else {
+                    return allData;
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -123,20 +140,21 @@ public class URL {
         return url;
     }
 
+
     private void collectStatistic(String fullogs, String mhistory) {
         String[] reportsAndWarns = countingReportsAndWarns(fullogs);
         String[] bansAndMutes = countingBansAndMutes(mhistory);
         String nickname = reportsAndWarns[0];
         int reports = Integer.parseInt(reportsAndWarns[1]);
         int warns = Integer.parseInt(reportsAndWarns[2]);
+        int bans = Integer.parseInt(bansAndMutes[0]);
+        int mutes = Integer.parseInt(bansAndMutes[1]);
         // если был отправлен mhistory, в котором хранятся муты и баны
         if (reports == 0 && warns == 0) {
             reportsAndWarns = countingReportsAndWarns(mhistory);
             reports = Integer.parseInt(reportsAndWarns[1]);
             warns = Integer.parseInt(reportsAndWarns[2]);
         }
-        int bans = Integer.parseInt(bansAndMutes[0]);
-        int mutes = Integer.parseInt(bansAndMutes[1]);
         // если был отправлен fullogs, в котором хранятся репорты и варны
         if (bans == 0 && mutes == 0) {
             bansAndMutes = countingBansAndMutes(fullogs);
