@@ -92,7 +92,7 @@ public class Url {
                 for (String occurrence : allOccurrences) {
                     if (logsCount == 24) {
                         TelegramBot.sendMessage(chatId, logsForSend);
-                        logsForSend = "";
+                        logsForSend = "Найденные вхождения команд " + logs.getNickname() + ":\n\n";
                         logsCount = 0;
                     }
                     logsForSend += occurrence + "\n";
@@ -147,8 +147,8 @@ public class Url {
         int warns = Integer.parseInt(reportsAndWarns[2]);
         int bans = Integer.parseInt(bansAndMutes[0]);
         int mutes = Integer.parseInt(bansAndMutes[1]);
-        String unbanned = logs.findPlayersWithRemovedPunish("/unban ");
-        String unmuted = logs.findPlayersWithRemovedPunish("/unmute ");
+        String unbannedPlayers = logs.findPlayersWithRemovedPunish("/unban ");
+        String unmutedPlayers = logs.findPlayersWithRemovedPunish("/unmute ");
         // если был отправлен mhistory, в котором хранятся муты и баны
         if (reports == 0 && warns == 0) {
             reportsAndWarns = countingReportsAndWarns(mhistory);
@@ -161,7 +161,7 @@ public class Url {
             bans = Integer.parseInt(bansAndMutes[0]);
             mutes = Integer.parseInt(bansAndMutes[1]);
         }
-        sendStatistic(nickname, bans, mutes, reports, warns, unbanned, unmuted);
+        sendStatistic(nickname, bans, mutes, reports, warns, unbannedPlayers, unmutedPlayers);
     }
 
     private String[] countingReportsAndWarns(String fullogs) {
@@ -178,14 +178,14 @@ public class Url {
         return new String[] {String.valueOf(bans), String.valueOf(mutes)};
     }
 
-    private void sendStatistic(String nickname, int bans, int mutes, int reports, int warns, String unbanned, String unmuted) {
+    private void sendStatistic(String nickname, int bans, int mutes, int reports, int warns, String unbannedPlayers, String unmutedPlayers) {
         String statistic = "Статистика " + nickname + "\n" +
                 (reports != 0 ? "Репорты: " + reports + "\n" : "Нет разобранных репортов\n") +
                 (mutes != 0 ? "Муты: " + mutes + "\n" : "Нет выданных мутов\n") +
                 (bans != 0 ? "Баны: " + bans + "\n" : "Нет выданных банов\n") +
                 (warns != 0 ? "Варны: " + warns + "\n" : "Нет выданных варнов\n") +
-                (!unbanned.isEmpty() ? "\nСписок разбаненных игроков:\n" + unbanned : "") +
-                (!unmuted.isEmpty() ? "\nСписок размученных игроков:\n" + unmuted : "");
+                (!unbannedPlayers.isEmpty() ? "\n\nСписок разбаненных игроков:\n" + unbannedPlayers : "") +
+                (!unmutedPlayers.isEmpty() ? "\n\nСписок размученных игроков:\n" + unmutedPlayers : "");
         TelegramBot.sendMessage(chatId, statistic);
     }
 }

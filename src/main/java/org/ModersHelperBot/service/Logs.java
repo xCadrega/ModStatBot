@@ -100,20 +100,20 @@ public class Logs {
     public String findPlayersWithRemovedPunish(String removalPunishCommand) {
         List<String> playersWithRemovedPunish = new ArrayList<>();
         Pattern pattern = Pattern.compile(removalPunishCommand + "(\\S+)");
-        String playerWithRemovedPunish;
         for (String date : dates) {
             for (int i = 0; i < logs.size(); i++) {
                 Matcher matcher = pattern.matcher(logs.get(i));
                 if (matcher.find() && logs.get(i).contains(date)) {
-                    playerWithRemovedPunish = matcher.group(1);
-                    for (int j = 1; j < 9; j++) {
+                    String playerWithRemovedPunish = matcher.group(1);
+                    boolean notRepunished = true;
+                    for (int j = 1; j < 9 && i + j <= logs.size(); j++) {
                         if (logs.get(i + j).contains("/punish " + playerWithRemovedPunish)
                                 || logs.get(i + j).contains(removalPunishCommand.charAt(0) + removalPunishCommand.substring(3) + playerWithRemovedPunish)) {
-                            playerWithRemovedPunish = "";
+                            notRepunished = false;
                             break;
                         }
                     }
-                    if (!playerWithRemovedPunish.isEmpty()) {
+                    if (notRepunished) {
                         playersWithRemovedPunish.add(playerWithRemovedPunish);
                     }
                 }
