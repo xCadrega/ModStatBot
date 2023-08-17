@@ -1,7 +1,8 @@
 package org.ModersHelperBot.service;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -96,7 +97,34 @@ public class Logs {
         return count;
     }
 
+    public String findPlayersWithRemovedPunish(String removalPunishCommand) {
+        List<String> playersWithRemovedPunish = new ArrayList<>();
+        Pattern pattern = Pattern.compile(removalPunishCommand + "(\\S+)");
+        String playerWithRemovedPunish;
+        for (String date : dates) {
+            for (int i = 0; i < logs.size(); i++) {
+                Matcher matcher = pattern.matcher(logs.get(i));
+                if (matcher.find() && logs.get(i).contains(date)) {
+                    playerWithRemovedPunish = matcher.group(1);
+                    for (int j = 1; j < 9; j++) {
+                        if (logs.get(i + j).contains("/punish " + playerWithRemovedPunish)
+                                || logs.get(i + j).contains(removalPunishCommand.charAt(0) + removalPunishCommand.substring(3) + playerWithRemovedPunish)) {
+                            playerWithRemovedPunish = "";
+                            break;
+                        }
+                    }
+                    if (!playerWithRemovedPunish.isEmpty()) {
+                        playersWithRemovedPunish.add(playerWithRemovedPunish);
+                    }
+                }
+            }
+        }
+        return String.join(", ", playersWithRemovedPunish);
+    }
+
     public String getOccurrencesOfCommand(String command) {
-        return logs.stream().filter(log -> log.contains(command)).collect(Collectors.joining("\n"));
+        return logs.stream()
+                .filter(log -> log.contains(command))
+                .collect(Collectors.joining("\n"));
     }
 }

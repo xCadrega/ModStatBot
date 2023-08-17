@@ -56,7 +56,8 @@ public class Url {
         }
         command += "\n" + message.substring(start);
         List<String> allCommands = new ArrayList<>(Arrays.asList(command.split("\n")));
-        allCommands.removeIf(userCommand -> userCommand.isEmpty() || userCommand.contains("Держи логи игрока"));
+        allCommands.removeIf(userCommand -> userCommand.isEmpty() || userCommand.contains("Держи логи игрока")
+                || userCommand.contains("Держи историю наказаний игрока"));
         setUrl(urls);
         setCommands(String.join("\n", allCommands));
         urlProcessing();
@@ -138,6 +139,7 @@ public class Url {
     }
 
     private void collectStatistic(String fullogs, String mhistory) {
+        Logs logs = new Logs(fullogs);
         String[] reportsAndWarns = countingReportsAndWarns(fullogs);
         String[] bansAndMutes = countingBansAndMutes(mhistory);
         String nickname = reportsAndWarns[0];
@@ -145,6 +147,8 @@ public class Url {
         int warns = Integer.parseInt(reportsAndWarns[2]);
         int bans = Integer.parseInt(bansAndMutes[0]);
         int mutes = Integer.parseInt(bansAndMutes[1]);
+        String unbanned = logs.findPlayersWithRemovedPunish("/unban ");
+        String unmuted = logs.findPlayersWithRemovedPunish("/unmute ");
         // если был отправлен mhistory, в котором хранятся муты и баны
         if (reports == 0 && warns == 0) {
             reportsAndWarns = countingReportsAndWarns(mhistory);
@@ -157,7 +161,7 @@ public class Url {
             bans = Integer.parseInt(bansAndMutes[0]);
             mutes = Integer.parseInt(bansAndMutes[1]);
         }
-        sendStatistic(nickname, bans, mutes, reports, warns);
+        sendStatistic(nickname, bans, mutes, reports, warns, unbanned, unmuted);
     }
 
     private String[] countingReportsAndWarns(String fullogs) {
@@ -174,12 +178,14 @@ public class Url {
         return new String[] {String.valueOf(bans), String.valueOf(mutes)};
     }
 
-    private void sendStatistic(String nickname, int bans, int mutes, int reports, int warns) {
+    private void sendStatistic(String nickname, int bans, int mutes, int reports, int warns, String unbanned, String unmuted) {
         String statistic = "Статистика " + nickname + "\n" +
                 (reports != 0 ? "Репорты: " + reports + "\n" : "Нет разобранных репортов\n") +
-                (warns != 0 ? "Варны: " + warns + "\n" : "Нет выданных варнов\n") +
+                (mutes != 0 ? "Муты: " + mutes + "\n" : "Нет выданных мутов\n") +
                 (bans != 0 ? "Баны: " + bans + "\n" : "Нет выданных банов\n") +
-                (mutes != 0 ? "Муты: " + mutes + "\n" : "Нет выданных мутов\n");
+                (warns != 0 ? "Варны: " + warns + "\n" : "Нет выданных варнов\n") +
+                (!unbanned.isEmpty() ? "\nСписок разбаненных игроков:\n" + unbanned : "") +
+                (!unmuted.isEmpty() ? "\nСписок размученных игроков:\n" + unmuted : "");
         TelegramBot.sendMessage(chatId, statistic);
     }
 }
