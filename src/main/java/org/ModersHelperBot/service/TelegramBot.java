@@ -29,11 +29,9 @@ public class TelegramBot extends TelegramLongPollingBot {
                     }
                 } default: {
                     if (message.contains("paste.mineland")) {
-                        Url url = new Url(chatId, message);
-                        url.urlsAndCommandsExtraction(message);
+                        new Url(chatId, message).urlsAndCommandsExtraction(message);
                     } else {
-                        String answer = "Я не вижу здесь ссылки, а вы?";
-                        sendMessage(chatId, answer);
+                        sendMessage(chatId, "Я не вижу здесь ссылки, а вы?");
                     }
                 }
             }
@@ -41,8 +39,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private static void startCommandReceived(long chatId, String firstName) throws TelegramApiException {
-        String answer = "Привет, " + firstName + "!";
-        sendMessage(chatId, answer);
+        sendMessage(chatId, "Привет, " + firstName + "!");
     }
 
     public static void sendMessage(long chatId, String textToSend) {

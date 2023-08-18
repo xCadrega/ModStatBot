@@ -83,8 +83,7 @@ public class Url {
             String logsForSend = "";
             int logsCount = 0;
             for (String url : urls) {
-                String fullLogs = parseJson(url);
-                Logs logs = new Logs(fullLogs);
+                Logs logs = new Logs(parseJson(url));
                 logsForSend += "Найденные вхождения команд " + logs.getNickname() + ":\n\n";
                 String[] allOccurrences = logs.getOccurrencesOfCommand(userCommand).split("\\n");
                 for (String occurrence : allOccurrences) {
@@ -155,7 +154,11 @@ public class Url {
             bans = Integer.parseInt(bansAndMutes[0]);
             mutes = Integer.parseInt(bansAndMutes[1]);
         }
-        sendStatistic(nickname, bans, mutes, reports, warns, unbannedPlayers, unmutedPlayers);
+        if (!nickname.isEmpty()) {
+            sendStatistic(nickname, bans, mutes, reports, warns, unbannedPlayers, unmutedPlayers);
+        } else {
+            TelegramBot.sendMessage(chatId, "Страница пуста и/или указан некорректный адрес.\n");
+        }
     }
 
     private String[] countingReportsAndWarns(String fullogs) {
@@ -173,18 +176,12 @@ public class Url {
     }
 
     private void sendStatistic(String nickname, int bans, int mutes, int reports, int warns, String unbannedPlayers, String unmutedPlayers) {
-        String statistic;
-        if (!nickname.isEmpty()) {
-            statistic = "Статистика " + nickname + "\n" +
-                    (reports != 0 ? "Репорты: " + reports + "\n" : "Нет разобранных репортов\n") +
-                    (mutes != 0 ? "Муты: " + mutes + "\n" : "Нет выданных мутов\n") +
-                    (bans != 0 ? "Баны: " + bans + "\n" : "Нет выданных банов\n") +
-                    (warns != 0 ? "Варны: " + warns + "\n" : "Нет выданных варнов\n") +
-                    (!unbannedPlayers.isEmpty() ? "\n\nСписок разбаненных игроков:\n" + unbannedPlayers : "") +
-                    (!unmutedPlayers.isEmpty() ? "\n\nСписок размученных игроков:\n" + unmutedPlayers : "");
-        } else {
-            statistic = "Страница пуста и/или указан некорректный адрес.";
-        }
-        TelegramBot.sendMessage(chatId, statistic);
+        TelegramBot.sendMessage(chatId, "Статистика " + nickname + "\n" +
+                (reports != 0 ? "Репорты: " + reports + "\n" : "Нет разобранных репортов\n") +
+                (mutes != 0 ? "Муты: " + mutes + "\n" : "Нет выданных мутов\n") +
+                (bans != 0 ? "Баны: " + bans + "\n" : "Нет выданных банов\n") +
+                (warns != 0 ? "Варны: " + warns + "\n" : "Нет выданных варнов\n") +
+                (!unbannedPlayers.isEmpty() ? "\nСписок разбаненных игроков:\n" + unbannedPlayers : "") +
+                (!unmutedPlayers.isEmpty() ? "\nСписок размученных игроков:\n" + unmutedPlayers : ""));
     }
 }
