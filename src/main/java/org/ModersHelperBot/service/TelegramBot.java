@@ -9,15 +9,20 @@ import javax.validation.constraints.NotNull;
 
 public class TelegramBot extends TelegramLongPollingBot {
     private static @NotNull TelegramBot TELEGRAM_BOT;
+    private String message;
+    private int messagesCount;
 
     public TelegramBot() {
         TELEGRAM_BOT = this;
+        this.message = "";
+        this.messagesCount = 0;
     }
 
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
-            String message = update.getMessage().getText();
+            message += update.getMessage().getText() + "\n";
+            messagesCount++;
             long chatId = update.getMessage().getChatId();
             String firstName = update.getMessage().getChat().getFirstName();
             switch (message) {
@@ -28,8 +33,10 @@ public class TelegramBot extends TelegramLongPollingBot {
                         e.printStackTrace();
                     }
                 } default: {
-                    if (message.contains("paste.mineland")) {
+                    if (messagesCount == 2 || (messagesCount == 1 && message.split("\n").length > messagesCount)) {
+                        messagesCount = 0;
                         new Url(chatId, message).urlsAndCommandsExtraction(message);
+                        message = "";
                     } else {
                         sendMessage(chatId, "Я не вижу здесь ссылки, а вы?");
                     }

@@ -41,7 +41,6 @@ public class Url {
 
     public void urlsAndCommandsExtraction(String message) {
         String urls = "";
-        String command = "";
         Pattern pattern = Pattern.compile("(paste.mineland\\.\\S+)|(https?://paste.mineland\\.\\S+)");
         Matcher matcher = pattern.matcher(message);
         int start = 0;
@@ -54,7 +53,7 @@ public class Url {
             }
             start = matcher.end();
         }
-        command += "\n" + message.substring(start);
+        String command = "\n" + message.substring(start);
         List<String> allCommands = new ArrayList<>(Arrays.asList(command.split("\n")));
         allCommands.removeIf(userCommand -> userCommand.isEmpty() || userCommand.contains("Держи логи игрока")
                 || userCommand.contains("Держи историю наказаний игрока"));
