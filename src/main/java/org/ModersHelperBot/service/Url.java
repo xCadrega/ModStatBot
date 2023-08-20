@@ -63,7 +63,7 @@ public class Url {
     }
 
     public void urlProcessing() {
-        String[] urls = correctUrls(getUrl());
+        String[] urls = urlsSplit(getUrl());
         int length = urls.length;
         if (length == 1 && commands.isEmpty()) {
             collectStatistic(parseJson(urls[0]), parseJson(urls[0]));
@@ -74,6 +74,16 @@ public class Url {
         } else {
             logsWithCommandsExtraction(urls);
         }
+    }
+
+    private String[] urlsSplit(String url) {
+        String[] urls = url.split("\n");
+        for (int index = 0; index < urls.length; index++) {
+            if (urls[index].startsWith("paste")) {
+                urls[index] = "https://" + urls[index];
+            }
+        }
+        return urls;
     }
 
     private void logsWithCommandsExtraction(String[] urls) {
@@ -99,16 +109,6 @@ public class Url {
                 TelegramBot.sendMessage(chatId, logsForSend);
             }
         }
-    }
-
-    private String[] correctUrls(String url) {
-        String[] urls = url.split("\n");
-        for (int index = 0; index < urls.length; index++) {
-            if (urls[index].startsWith("paste")) {
-                urls[index] = "https://" + urls[index];
-            }
-        }
-        return urls;
     }
 
     private String parseJson(String url) {

@@ -21,10 +21,9 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
-            message += update.getMessage().getText() + "\n";
-            messagesCount++;
             long chatId = update.getMessage().getChatId();
             String firstName = update.getMessage().getChat().getFirstName();
+            messagesCount++;
             switch (message) {
                 case "/start": {
                     try {
@@ -33,12 +32,15 @@ public class TelegramBot extends TelegramLongPollingBot {
                         e.printStackTrace();
                     }
                 } default: {
-                    if (messagesCount == 2 || (messagesCount == 1 && message.split("\n").length > messagesCount)) {
-                        messagesCount = 0;
-                        new Url(chatId, message).urlsAndCommandsExtraction(message);
-                        message = "";
+                    if (update.getMessage().getText().contains("paste.mineland")) {
+                        message += update.getMessage().getText() + "\n";
                     } else {
                         sendMessage(chatId, "Я не вижу здесь ссылки, а вы?");
+                    }
+                    if (messagesCount == 2 || (messagesCount == 1 && message.split("\n").length > messagesCount)) {
+                        new Url(chatId, message).urlsAndCommandsExtraction(message);
+                        messagesCount = 0;
+                        message = "";
                     }
                 }
             }
