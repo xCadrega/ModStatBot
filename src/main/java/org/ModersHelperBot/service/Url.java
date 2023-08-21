@@ -104,6 +104,9 @@ public class Url {
                     logsForSend += occurrence + "\n";
                     logsCount++;
                 }
+                if (logsForSend.split(" ").length == 4) {
+                    logsForSend = "";
+                }
             }
             if (logsForSend.length() > 0) {
                 TelegramBot.sendMessage(chatId, logsForSend);

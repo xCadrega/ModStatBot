@@ -23,17 +23,13 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             long chatId = update.getMessage().getChatId();
             String firstName = update.getMessage().getChat().getFirstName();
-            messagesCount++;
             switch (message) {
                 case "/start": {
-                    try {
-                        startCommandReceived(chatId, firstName);
-                    } catch (TelegramApiException e) {
-                        e.printStackTrace();
-                    }
+                    sendMessage(chatId, "Привет, " + firstName + "!");
                 } default: {
                     if (update.getMessage().getText().contains("paste.mineland")) {
                         message += update.getMessage().getText() + "\n";
+                        messagesCount++;
                     } else {
                         sendMessage(chatId, "Я не вижу здесь ссылки, а вы?");
                     }
@@ -45,10 +41,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
             }
         }
-    }
-
-    private static void startCommandReceived(long chatId, String firstName) throws TelegramApiException {
-        sendMessage(chatId, "Привет, " + firstName + "!");
     }
 
     public static void sendMessage(long chatId, String textToSend) {
