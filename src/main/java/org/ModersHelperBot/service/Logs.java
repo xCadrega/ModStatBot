@@ -1,5 +1,7 @@
 package org.ModersHelperBot.service;
 
+import lombok.Getter;
+
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -8,7 +10,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class Logs {
-    private final String nickname;
+    @Getter private final String nickname;
     private final List<String> logs;
     private final String[] dates;
     private final int year;
@@ -40,10 +42,6 @@ public class Logs {
                 .findFirst()
                 .map(elements -> elements.length > 3 ? elements[3] : "")
                 .orElse("");
-    }
-
-    public String getNickname() {
-        return nickname;
     }
 
     public int countOfWarns() {
@@ -98,28 +96,29 @@ public class Logs {
     }
 
     public String findPlayersWithRemovedPunish(String removalPunishCommand) {
-        List<String> playersWithRemovedPunish = new ArrayList<>();
+        List<String> notPunished = new ArrayList<>();
         Pattern pattern = Pattern.compile(removalPunishCommand + "(\\S+)");
         for (String date : dates) {
-            for (int i = 0; i < logs.size(); i++) {
-                Matcher matcher = pattern.matcher(logs.get(i));
-                if (matcher.find() && logs.get(i).contains(date)) {
-                    String playerWithRemovedPunish = matcher.group(1);
+            for (int index = 0; index < logs.size(); index++) {
+                Matcher matcher = pattern.matcher(logs.get(index));
+                if (matcher.find() && logs.get(index).contains(date)) {
+                    String player = matcher.group(1);
                     boolean notRepunished = true;
-                    for (int j = 1; j < 9 && i + j <= logs.size(); j++) {
-                        if (logs.get(i + j).contains("/punish " + playerWithRemovedPunish)
-                                || logs.get(i + j).contains(removalPunishCommand.charAt(0) + removalPunishCommand.substring(3) + playerWithRemovedPunish)) {
+                    for (int logToCheck = 1; logToCheck < 9 && index + logToCheck <= logs.size(); logToCheck++) {
+                        if (logs.get(index + logToCheck).contains("/punish " + player)
+                                || logs.get(index + logToCheck).contains(removalPunishCommand.charAt(0)
+                                + removalPunishCommand.substring(3) + player)) {
                             notRepunished = false;
                             break;
                         }
                     }
                     if (notRepunished) {
-                        playersWithRemovedPunish.add(playerWithRemovedPunish);
+                        notPunished.add(player);
                     }
                 }
             }
         }
-        return String.join(", ", playersWithRemovedPunish);
+        return String.join(", ", notPunished);
     }
 
     public String getOccurrencesOfCommand(String command) {

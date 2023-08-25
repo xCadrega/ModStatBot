@@ -1,6 +1,8 @@
 package org.ModersHelperBot.service;
 
 import com.google.gson.Gson;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -14,8 +16,8 @@ import java.util.regex.Pattern;
 
 public class Url {
     private final long chatId;
-    private String url;
-    private String commands;
+    @Getter @Setter private String url;
+    @Getter @Setter private String commands;
 
     public Url(long chatId, String url) {
         this.chatId = chatId;
@@ -23,34 +25,14 @@ public class Url {
         this.commands = "";
     }
 
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getCommands() {
-        return commands;
-    }
-
-    public void setCommands(String commands) {
-        this.commands = commands;
-    }
-
     public void urlsAndCommandsExtraction(String message) {
         String urls = "";
-        Pattern pattern = Pattern.compile("(paste.mineland\\.\\S+)|(https?://paste.mineland\\.\\S+)");
+        Pattern pattern = Pattern.compile("(paste.mineland\\.\\S+)");
         Matcher matcher = pattern.matcher(message);
         int start = 0;
         while (matcher.find(start)) {
             String foundedUrl = matcher.group();
-            if (start == 0) {
-                urls += foundedUrl;
-            } else {
-                urls += "\n" + foundedUrl;
-            }
+            urls += foundedUrl + "\n";
             start = matcher.end();
         }
         String command = "\n" + message.substring(start);
@@ -62,8 +44,8 @@ public class Url {
         urlProcessing();
     }
 
-    public void urlProcessing() {
-        String[] urls = urlsSplit(getUrl());
+    private void urlProcessing() {
+        String[] urls = urlsSplitAndFormat(getUrl());
         int length = urls.length;
         if (length == 1 && commands.isEmpty()) {
             collectStatistic(parseJson(urls[0]), parseJson(urls[0]));
@@ -76,7 +58,7 @@ public class Url {
         }
     }
 
-    private String[] urlsSplit(String url) {
+    private String[] urlsSplitAndFormat(String url) {
         String[] urls = url.split("\n");
         for (int index = 0; index < urls.length; index++) {
             if (urls[index].startsWith("paste")) {
@@ -86,11 +68,33 @@ public class Url {
         return urls;
     }
 
+    private String parseJson(String url) {
+        if (url.contains(".me")) {
+            url = url.substring(0, 26) + "documents/" + url.substring(26);
+        } else if (url.contains(".net")) {
+            url = url.substring(0, 27) + "documents/" + url.substring(27);
+        }
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setRequestMethod("GET");
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                Data data = new Gson().fromJson(reader, Data.class);
+                return data.getData();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return url;
+    }
+
     private void logsWithCommandsExtraction(String[] urls) {
         String[] userCommands = getCommands().split("\n");
         for (String userCommand : userCommands) {
             String logsForSend = "";
             int logsCount = 0;
+            if (userCommand.isEmpty()) {
+                continue;
+            }
             for (String url : urls) {
                 Logs logs = new Logs(parseJson(url));
                 logsForSend += "Найденные вхождения команд " + logs.getNickname() + ":\n\n";
@@ -112,25 +116,6 @@ public class Url {
                 TelegramBot.sendMessage(chatId, logsForSend);
             }
         }
-    }
-
-    private String parseJson(String url) {
-        if (url.contains(".me")) {
-            url = url.substring(0, 26) + "documents/" + url.substring(26);
-        } else if (url.contains(".net")) {
-            url = url.substring(0, 27) + "documents/" + url.substring(27);
-        }
-        try {
-            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-            connection.setRequestMethod("GET");
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                Data data = new Gson().fromJson(reader, Data.class);
-                return data.getData();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return url;
     }
 
     private void collectStatistic(String fullogs, String mhistory) {

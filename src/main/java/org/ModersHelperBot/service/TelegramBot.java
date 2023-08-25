@@ -30,13 +30,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                     if (update.getMessage().getText().contains("paste.mineland")) {
                         message += update.getMessage().getText() + "\n";
                         messagesCount++;
+                        if (messagesCount == 2 || (messagesCount == 1 && message.split("\n").length > messagesCount)) {
+                            new Url(chatId, message).urlsAndCommandsExtraction(message);
+                            messagesCount = 0;
+                            message = "";
+                        }
                     } else {
                         sendMessage(chatId, "Я не вижу здесь ссылки, а вы?");
-                    }
-                    if (messagesCount == 2 || (messagesCount == 1 && message.split("\n").length > messagesCount)) {
-                        new Url(chatId, message).urlsAndCommandsExtraction(message);
-                        messagesCount = 0;
-                        message = "";
                     }
                 }
             }
@@ -55,11 +55,11 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     public String getBotToken() {
-        return "6587926634:AAGPNBJqewwxR4xe85vlRpXW1O3Rx3xS0Ms";
+        return "token";
     }
 
     @Override
     public String getBotUsername() {
-        return "ModersHelperBot";
+        return "username";
     }
 }
