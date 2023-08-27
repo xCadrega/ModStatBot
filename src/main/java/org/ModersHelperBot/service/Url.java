@@ -89,6 +89,7 @@ public class Url {
 
     private void logsWithCommandsExtraction(String[] urls) {
         String[] userCommands = getCommands().split("\n");
+        final int MAX_LOGS_TO_SEND = 24;
         for (String userCommand : userCommands) {
             String logsForSend = "";
             int logsCount = 0;
@@ -100,7 +101,7 @@ public class Url {
                 logsForSend += "Найденные вхождения команд " + logs.getNickname() + ":\n\n";
                 String[] allOccurrences = logs.getOccurrencesOfCommand(userCommand).split("\\n");
                 for (String occurrence : allOccurrences) {
-                    if (logsCount == 24) {
+                    if (logsCount == MAX_LOGS_TO_SEND) {
                         TelegramBot.sendMessage(chatId, logsForSend);
                         logsForSend = "Найденные вхождения команд " + logs.getNickname() + ":\n\n";
                         logsCount = 0;
@@ -120,46 +121,31 @@ public class Url {
 
     private void collectStatistic(String fullogs, String mhistory) {
         Logs logs = new Logs(fullogs);
-        String[] reportsAndWarns = countingReportsAndWarns(fullogs);
-        String[] bansAndMutes = countingBansAndMutes(mhistory);
-        String nickname = reportsAndWarns[0];
-        int reports = Integer.parseInt(reportsAndWarns[1]);
-        int warns = Integer.parseInt(reportsAndWarns[2]);
-        int bans = Integer.parseInt(bansAndMutes[0]);
-        int mutes = Integer.parseInt(bansAndMutes[1]);
+        Logs history = new Logs(mhistory);
+        String nickname = logs.getNickname();
+        int reports = logs.countOfReports();
+        int warns = logs.countOfWarns();
+        int bans = history.countOfBans();
+        int mutes = history.countOfMutes();
         String unbannedPlayers = logs.findPlayersWithRemovedPunish("/unban ");
         String unmutedPlayers = logs.findPlayersWithRemovedPunish("/unmute ");
         // если был отправлен mhistory, в котором хранятся муты и баны
         if (reports == 0 && warns == 0) {
-            reportsAndWarns = countingReportsAndWarns(mhistory);
-            reports = Integer.parseInt(reportsAndWarns[1]);
-            warns = Integer.parseInt(reportsAndWarns[2]);
+            logs = new Logs(mhistory);
+            reports = logs.countOfReports();
+            warns = logs.countOfWarns();
         }
         // если был отправлен fullogs, в котором хранятся репорты и варны
         if (bans == 0 && mutes == 0) {
-            bansAndMutes = countingBansAndMutes(fullogs);
-            bans = Integer.parseInt(bansAndMutes[0]);
-            mutes = Integer.parseInt(bansAndMutes[1]);
+            history = new Logs(fullogs);
+            bans = history.countOfBans();
+            mutes = history.countOfMutes();
         }
         if (!nickname.isEmpty()) {
             sendStatistic(nickname, bans, mutes, reports, warns, unbannedPlayers, unmutedPlayers);
         } else {
             TelegramBot.sendMessage(chatId, "Страница пуста и/или указан некорректный адрес.\n");
         }
-    }
-
-    private String[] countingReportsAndWarns(String fullogs) {
-        Logs logs = new Logs(fullogs);
-        int reports = logs.countOfReports();
-        int warns = logs.countOfWarns();
-        return new String[] {logs.getNickname(), String.valueOf(reports), String.valueOf(warns)};
-    }
-
-    private String[] countingBansAndMutes(String mhistory) {
-        Logs logs = new Logs(mhistory);
-        int bans = logs.countOfBans();
-        int mutes = logs.countOfMutes();
-        return new String[] {String.valueOf(bans), String.valueOf(mutes)};
     }
 
     private void sendStatistic(String nickname, int bans, int mutes, int reports, int warns, String unbannedPlayers, String unmutedPlayers) {

@@ -30,7 +30,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     if (update.getMessage().getText().contains("paste.mineland")) {
                         message += update.getMessage().getText() + "\n";
                         messagesCount++;
-                        if (messagesCount == 2 || (messagesCount == 1 && message.split("\n").length > messagesCount)) {
+                        if (messagesCount == 2 || message.split("\n").length > messagesCount) {
                             new Url(chatId, message).urlsAndCommandsExtraction(message);
                             messagesCount = 0;
                             message = "";
