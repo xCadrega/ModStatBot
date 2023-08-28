@@ -41,17 +41,17 @@ public class Url {
                 || userCommand.contains("Держи историю наказаний игрока"));
         setUrl(urls);
         setCommands(String.join("\n", allCommands));
-        urlProcessing();
+        urlsHandling();
     }
 
-    private void urlProcessing() {
+    private void urlsHandling() {
         String[] urls = urlsSplitAndFormat(getUrl());
         int length = urls.length;
         if (length == 1 && commands.isEmpty()) {
-            collectStatistic(parseJson(urls[0]), parseJson(urls[0]));
+            collectStatistic(parseJson(urls[0]), parseJson(urls[0]), false);
         } else if (length % 2 == 0 && commands.isEmpty()) {
             for (int urlCount = 0; urlCount < length; urlCount++) {
-                collectStatistic(parseJson(urls[urlCount]), parseJson(urls[++urlCount]));
+                collectStatistic(parseJson(urls[urlCount]), parseJson(urls[++urlCount]), false);
             }
         } else {
             logsWithCommandsExtraction(urls);
@@ -119,7 +119,7 @@ public class Url {
         }
     }
 
-    private void collectStatistic(String fullogs, String mhistory) {
+    private void collectStatistic(String fullogs, String mhistory, boolean isRepeatedCall) {
         Logs logs = new Logs(fullogs);
         Logs history = new Logs(mhistory);
         String nickname = logs.getNickname();
@@ -129,22 +129,12 @@ public class Url {
         int mutes = history.countOfMutes();
         String unbannedPlayers = logs.findPlayersWithRemovedPunish("/unban ");
         String unmutedPlayers = logs.findPlayersWithRemovedPunish("/unmute ");
-        // если был отправлен mhistory, в котором хранятся муты и баны
-        if (reports == 0 && warns == 0) {
-            logs = new Logs(mhistory);
-            reports = logs.countOfReports();
-            warns = logs.countOfWarns();
-        }
-        // если был отправлен fullogs, в котором хранятся репорты и варны
-        if (bans == 0 && mutes == 0) {
-            history = new Logs(fullogs);
-            bans = history.countOfBans();
-            mutes = history.countOfMutes();
-        }
-        if (!nickname.isEmpty()) {
-            sendStatistic(nickname, bans, mutes, reports, warns, unbannedPlayers, unmutedPlayers);
-        } else {
+        if (nickname.isEmpty()) {
             TelegramBot.sendMessage(chatId, "Страница пуста и/или указан некорректный адрес.\n");
+        } else if (reports == 0 && warns == 0 && bans == 0 && mutes == 0 && !isRepeatedCall) {
+            collectStatistic(mhistory, fullogs, true);
+        } else {
+            sendStatistic(nickname, bans, mutes, reports, warns, unbannedPlayers, unmutedPlayers);
         }
     }
 
