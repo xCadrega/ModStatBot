@@ -1,3 +1,4 @@
+
 package org.ModersHelperBot.service;
 
 import com.google.gson.Gson;
@@ -15,27 +16,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Url {
-    private final long chatId;
     @Getter @Setter private String url;
     @Getter @Setter private String commands;
 
-    public Url(long chatId, String url) {
-        this.chatId = chatId;
+    public Url(String url) {
         this.url = url;
         this.commands = "";
     }
 
-    public void urlsAndCommandsExtraction(String message) {
+    public void urlsAndCommandsExtraction() {
         String urls = "";
         Pattern pattern = Pattern.compile("(paste.mineland\\.\\S+)");
-        Matcher matcher = pattern.matcher(message);
+        Matcher matcher = pattern.matcher(getUrl());
         int start = 0;
         while (matcher.find(start)) {
             String foundedUrl = matcher.group();
             urls += foundedUrl + "\n";
             start = matcher.end();
         }
-        String command = "\n" + message.substring(start);
+        String command = "\n" + getUrl().substring(start);
         List<String> allCommands = new ArrayList<>(Arrays.asList(command.split("\n")));
         allCommands.removeIf(userCommand -> userCommand.isEmpty() || userCommand.contains("Держи логи игрока")
                 || userCommand.contains("Держи историю наказаний игрока"));
@@ -46,11 +45,8 @@ public class Url {
 
     private void urlsHandling() {
         String[] urls = urlsSplitAndFormat(getUrl());
-        int length = urls.length;
-        if (length == 1 && commands.isEmpty()) {
-            collectStatistic(parseJson(urls[0]), parseJson(urls[0]), false);
-        } else if (length % 2 == 0 && commands.isEmpty()) {
-            for (int urlCount = 0; urlCount < length; urlCount++) {
+        if (urls.length % 2 == 0 && commands.isEmpty()) {
+            for (int urlCount = 0; urlCount < urls.length - 1; urlCount++) {
                 collectStatistic(parseJson(urls[urlCount]), parseJson(urls[++urlCount]), false);
             }
         } else {
@@ -69,6 +65,7 @@ public class Url {
     }
 
     private String parseJson(String url) {
+        Data data = null;
         if (url.contains(".me")) {
             url = url.substring(0, 26) + "documents/" + url.substring(26);
         } else if (url.contains(".net")) {
@@ -78,13 +75,13 @@ public class Url {
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setRequestMethod("GET");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                Data data = new Gson().fromJson(reader, Data.class);
+                data = new Gson().fromJson(reader, Data.class);
                 return data.getData();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return url;
+        return data != null ? data.getData() : "";
     }
 
     private void logsWithCommandsExtraction(String[] urls) {
@@ -102,7 +99,7 @@ public class Url {
                 String[] allOccurrences = logs.getOccurrencesOfCommand(userCommand).split("\\n");
                 for (String occurrence : allOccurrences) {
                     if (logsCount == MAX_LOGS_TO_SEND) {
-                        TelegramBot.sendMessage(chatId, logsForSend);
+                        TelegramBot.sendMessage(logsForSend);
                         logsForSend = "Найденные вхождения команд " + logs.getNickname() + ":\n\n";
                         logsCount = 0;
                     }
@@ -114,7 +111,7 @@ public class Url {
                 }
             }
             if (logsForSend.length() > 0) {
-                TelegramBot.sendMessage(chatId, logsForSend);
+                TelegramBot.sendMessage(logsForSend);
             }
         }
     }
@@ -130,7 +127,7 @@ public class Url {
         String unbannedPlayers = logs.findPlayersWithRemovedPunish("/unban ");
         String unmutedPlayers = logs.findPlayersWithRemovedPunish("/unmute ");
         if (nickname.isEmpty()) {
-            TelegramBot.sendMessage(chatId, "Страница пуста и/или указан некорректный адрес.\n");
+            TelegramBot.sendMessage("Страница пуста и/или указан некорректный адрес.\n");
         } else if (reports == 0 && warns == 0 && bans == 0 && mutes == 0 && !isRepeatedCall) {
             collectStatistic(mhistory, fullogs, true);
         } else {
@@ -139,7 +136,7 @@ public class Url {
     }
 
     private void sendStatistic(String nickname, int bans, int mutes, int reports, int warns, String unbannedPlayers, String unmutedPlayers) {
-        TelegramBot.sendMessage(chatId, "Статистика " + nickname + "\n" +
+        TelegramBot.sendMessage("Статистика " + nickname + "\n" +
                 (reports != 0 ? "Репорты: " + reports + "\n" : "Нет разобранных репортов\n") +
                 (mutes != 0 ? "Муты: " + mutes + "\n" : "Нет выданных мутов\n") +
                 (bans != 0 ? "Баны: " + bans + "\n" : "Нет выданных банов\n") +

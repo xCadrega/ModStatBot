@@ -5,7 +5,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,7 +12,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TelegramBot extends TelegramLongPollingBot {
-    private static @NotNull TelegramBot TELEGRAM_BOT;
+    private static TelegramBot TELEGRAM_BOT = null;
+    private static long chatId;
     private String message;
     private int messagesCount;
 
@@ -26,57 +26,65 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
-            long chatId = update.getMessage().getChatId();
-            String userMessage = update.getMessage().getText();
+            String userCommand = update.getMessage().getText();
+            chatId = update.getMessage().getChatId();
             String firstName = update.getMessage().getChat().getFirstName();
-            switch (userMessage) {
-                case "/start": {
-                    sendMessage(chatId, "Привет, " + firstName + "!");
-                    break;
-                } default: {
-                    if (update.getMessage().getText().contains("paste.mineland")) {
+            switch (userCommand) {
+                case "/start" -> sendMessage("Привет, " + firstName + "!");
+                default -> {
+                    if (userCommand.contains("paste.mineland")) {
                         message += "\n" + update.getMessage().getText();
                         messagesCount++;
-                        messagesHandling(chatId);
+                        handleMessages();
                     } else {
-                        sendMessage(chatId, "Я не вижу здесь ссылки, а вы?");
+                        sendMessage("Я не вижу здесь ссылки, а вы?");
                     }
                 }
             }
         }
     }
 
-    private void messagesHandling(long chatId) {
+    private void handleMessages() {
         if (messagesCount == 1 && message.split("\n").length > 2) {
-            new Url(chatId, message).urlsAndCommandsExtraction(message);
-            messagesCount = 0;
-            message = "";
+            processOneMessage();
         } else {
             List<String> messages = new ArrayList<>(Arrays.asList(message.split("\n")));
             messages.removeIf(String::isEmpty);
-            Pattern pattern = Pattern.compile("(?<=\\s)[^:\\s]+(?=:)");
-            Matcher matcher = pattern.matcher(messages.get(0));
-            String nickname = "";
-            if (matcher.find()) {
-                nickname = matcher.group();
-            }
-            for (int i = 1; i <= messages.size() - 1; i++) {
-                if (messages.get(i).contains(nickname)) {
-                    String occurence = messages.get(i);
-                    String messageToSend = messages.get(0) + "\n" + occurence;
-                    messages.remove(0);
-                    messages.remove(occurence);
-                    new Url(chatId, messageToSend).urlsAndCommandsExtraction(messageToSend);
-                    message = String.join("\n", messages);
-                    if (messages.size() >= 2) {
-                        messagesHandling(chatId);
-                    }
+            String nickname = extractNickname(messages.get(0));
+            for (int index = 1; index <= messages.size() - 1; index++) {
+                if (messages.get(index).contains(nickname)) {
+                    processTwoMessages(messages, index);
                 }
             }
         }
     }
 
-    public static void sendMessage(long chatId, String textToSend) {
+    private String extractNickname(String firstMessageLine) {
+        Pattern pattern = Pattern.compile("(?<=\\s)[^:\\s]+(?=:)");
+        Matcher matcher = pattern.matcher(firstMessageLine);
+        return matcher.find() ? matcher.group() : "";
+    }
+
+    private void processOneMessage() {
+        new Url(message).urlsAndCommandsExtraction();
+        messagesCount = 0;
+        message = "";
+    }
+
+    private void processTwoMessages(List<String> messages, int index) {
+        String foundedMessage = messages.get(index);
+        String messageToSend = messages.get(0) + "\n" + foundedMessage;
+        messages.remove(0);
+        messages.remove(foundedMessage);
+        new Url(messageToSend).urlsAndCommandsExtraction();
+        message = String.join("\n", messages);
+        messagesCount -= 2;
+        if (messages.size() >= 2) {
+            handleMessages();
+        }
+    }
+
+    public static void sendMessage(String textToSend) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
         message.setText(textToSend);
@@ -88,11 +96,11 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     public String getBotToken() {
-        return "token";
+        return "6587926634:AAGPNBJqewwxR4xe85vlRpXW1O3Rx3xS0Ms";
     }
 
     @Override
     public String getBotUsername() {
-        return "username";
+        return "ModersHelperBot";
     }
 }
