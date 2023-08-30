@@ -28,9 +28,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String userCommand = update.getMessage().getText();
             chatId = update.getMessage().getChatId();
-            String firstName = update.getMessage().getChat().getFirstName();
             switch (userCommand) {
-                case "/start" -> sendMessage("Привет, " + firstName + "!");
+                case "/start" -> sendMessage("Привет, " + update.getMessage().getChat().getFirstName() + "!");
                 default -> {
                     if (userCommand.contains("paste.mineland")) {
                         message += "\n" + update.getMessage().getText();
@@ -96,11 +95,11 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     public String getBotToken() {
-        return "6587926634:AAGPNBJqewwxR4xe85vlRpXW1O3Rx3xS0Ms";
+        return "token";
     }
 
     @Override
     public String getBotUsername() {
-        return "ModersHelperBot";
+        return "username";
     }
 }

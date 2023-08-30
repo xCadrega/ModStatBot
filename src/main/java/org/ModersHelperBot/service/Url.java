@@ -1,4 +1,3 @@
-
 package org.ModersHelperBot.service;
 
 import com.google.gson.Gson;
@@ -37,13 +36,13 @@ public class Url {
         String command = "\n" + getUrl().substring(start);
         List<String> allCommands = new ArrayList<>(Arrays.asList(command.split("\n")));
         allCommands.removeIf(userCommand -> userCommand.isEmpty() || userCommand.contains("Держи логи игрока")
-                || userCommand.contains("Держи историю наказаний игрока"));
+                || userCommand.contains("Держи историю выданных наказаний игрока"));
         setUrl(urls);
         setCommands(String.join("\n", allCommands));
-        urlsHandling();
+        handleUrls();
     }
 
-    private void urlsHandling() {
+    private void handleUrls() {
         String[] urls = urlsSplitAndFormat(getUrl());
         if (urls.length % 2 == 0 && commands.isEmpty()) {
             for (int urlCount = 0; urlCount < urls.length - 1; urlCount++) {
@@ -95,23 +94,23 @@ public class Url {
             }
             for (String url : urls) {
                 Logs logs = new Logs(parseJson(url));
-                logsForSend += "Найденные вхождения команд " + logs.getNickname() + ":\n\n";
+                String nickname = logs.getNickname();
+                logsForSend += "Найденные вхождения команд " + nickname + ":\n\n";
                 String[] allOccurrences = logs.getOccurrencesOfCommand(userCommand).split("\\n");
                 for (String occurrence : allOccurrences) {
                     if (logsCount == MAX_LOGS_TO_SEND) {
                         TelegramBot.sendMessage(logsForSend);
-                        logsForSend = "Найденные вхождения команд " + logs.getNickname() + ":\n\n";
+                        logsForSend = "Найденные вхождения команд " + nickname + ":\n\n";
                         logsCount = 0;
                     }
                     logsForSend += occurrence + "\n";
                     logsCount++;
                 }
-                if (logsForSend.split(" ").length == 4) {
-                    logsForSend = "";
+                if (logsForSend.split(" ").length > 4) {
+                    TelegramBot.sendMessage(logsForSend);
+                } else {
+                    TelegramBot.sendMessage("Нет вхождений команд \"" + userCommand + "\" в логах игрока " + nickname);
                 }
-            }
-            if (logsForSend.length() > 0) {
-                TelegramBot.sendMessage(logsForSend);
             }
         }
     }

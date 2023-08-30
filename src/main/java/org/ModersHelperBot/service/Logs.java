@@ -71,6 +71,9 @@ public class Logs {
             banCount += (int) logs.stream()
                     .filter(log -> (log.contains(date + "." + year) && log.contains("Бан игроку")))
                     .count();
+            banCount -= (int) logs.stream()
+                    .filter(log -> (log.contains(date + "." + year) && log.contains("Бан игроку") && log.contains("3.1 -")))
+                    .count();
             multiaccountBanCount += (int) logs.stream()
                     .filter(log -> (log.contains(date + "." + year) && log.contains("1.2 -")))
                     .count();
