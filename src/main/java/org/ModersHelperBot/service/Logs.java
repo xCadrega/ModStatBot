@@ -2,6 +2,7 @@ package org.ModersHelperBot.service;
 
 import lombok.Getter;
 
+import java.time.DayOfWeek;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,9 +25,14 @@ public class Logs {
     }
 
     private void fillDays() {
-        int dayOfWeek = LocalDate.now().getDayOfWeek().getValue();
-        LocalDate endOfWeek = LocalDate.now().minusDays(dayOfWeek + 1);
-        LocalDate startOfWeek = endOfWeek.minusDays(6);
+        LocalDate today = LocalDate.now();
+        LocalDate endOfWeek;
+        if (today.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            endOfWeek = today;
+        } else {
+            endOfWeek = today.minusDays(today.getDayOfWeek().getValue());
+        }
+        LocalDate startOfWeek = endOfWeek.minusDays(7);
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM");
         for (int index = 0; index < 7; index++) {
             dates[index] = startOfWeek.format(dateFormatter);
@@ -122,6 +128,34 @@ public class Logs {
             }
         }
         return true;
+    }
+
+    public void logsWithCommandsExtraction(String[] commands) {
+        final int MAX_LOGS_TO_SEND = 24;
+        for (String command : commands) {
+            String logsForSend = "";
+            int logsCount = 0;
+            if (command.isEmpty()) {
+                continue;
+            }
+            String nickname = getNickname();
+            logsForSend += "Найденные вхождения команд " + nickname + ":\n\n";
+            String[] allOccurrences = getOccurrencesOfCommand(command).split("\\n");
+            for (String occurrence : allOccurrences) {
+                if (logsCount == MAX_LOGS_TO_SEND) {
+                    TelegramBot.sendMessage(logsForSend);
+                    logsForSend = "Найденные вхождения команд " + nickname + ":\n\n";
+                    logsCount = 0;
+                }
+                logsForSend += occurrence + "\n";
+                logsCount++;
+            }
+            if (logsForSend.split(" ").length > 4) {
+                TelegramBot.sendMessage(logsForSend);
+            } else {
+                TelegramBot.sendMessage("Нет вхождений команд \"" + command + "\" в логах игрока " + nickname);
+            }
+        }
     }
 
     public String getOccurrencesOfCommand(String command) {

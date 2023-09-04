@@ -33,7 +33,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 default -> {
                     if (userCommand.contains("paste.mineland")) {
                         message += "\n" + update.getMessage().getText();
-                        messagesCount++;
+                        ++messagesCount;
                         handleMessages();
                     } else {
                         sendMessage("Я не вижу здесь ссылки, а вы?");
@@ -44,7 +44,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void handleMessages() {
-        if (messagesCount == 1 && message.split("\n").length > 2) {
+        if (messagesCount == 1 && message.split("\n").length > 3) {
             processOneMessage();
         } else {
             List<String> messages = new ArrayList<>(Arrays.asList(message.split("\n")));

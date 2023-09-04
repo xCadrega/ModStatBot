@@ -46,10 +46,13 @@ public class Url {
         String[] urls = urlsSplitAndFormat(getUrl());
         if (urls.length % 2 == 0 && commands.isEmpty()) {
             for (int urlCount = 0; urlCount < urls.length - 1; urlCount++) {
-                collectStatistic(parseJson(urls[urlCount]), parseJson(urls[++urlCount]), false);
+                new Statistic(parseJson(urls[urlCount]), parseJson(urls[++urlCount]));
             }
         } else {
-            logsWithCommandsExtraction(urls);
+            String[] userCommands = getCommands().split("\n");
+            for (String url : urls) {
+                new Logs(parseJson(url)).logsWithCommandsExtraction(userCommands);
+            }
         }
     }
 
@@ -63,7 +66,7 @@ public class Url {
         return urls;
     }
 
-    private String parseJson(String url) {
+    public static String parseJson(String url) {
         Data data = null;
         if (url.contains(".me")) {
             url = url.substring(0, 26) + "documents/" + url.substring(26);
@@ -81,66 +84,5 @@ public class Url {
             e.printStackTrace();
         }
         return data != null ? data.getData() : "";
-    }
-
-    private void logsWithCommandsExtraction(String[] urls) {
-        String[] userCommands = getCommands().split("\n");
-        final int MAX_LOGS_TO_SEND = 24;
-        for (String userCommand : userCommands) {
-            String logsForSend = "";
-            int logsCount = 0;
-            if (userCommand.isEmpty()) {
-                continue;
-            }
-            for (String url : urls) {
-                Logs logs = new Logs(parseJson(url));
-                String nickname = logs.getNickname();
-                logsForSend += "Найденные вхождения команд " + nickname + ":\n\n";
-                String[] allOccurrences = logs.getOccurrencesOfCommand(userCommand).split("\\n");
-                for (String occurrence : allOccurrences) {
-                    if (logsCount == MAX_LOGS_TO_SEND) {
-                        TelegramBot.sendMessage(logsForSend);
-                        logsForSend = "Найденные вхождения команд " + nickname + ":\n\n";
-                        logsCount = 0;
-                    }
-                    logsForSend += occurrence + "\n";
-                    logsCount++;
-                }
-                if (logsForSend.split(" ").length > 4) {
-                    TelegramBot.sendMessage(logsForSend);
-                } else {
-                    TelegramBot.sendMessage("Нет вхождений команд \"" + userCommand + "\" в логах игрока " + nickname);
-                }
-            }
-        }
-    }
-
-    private void collectStatistic(String fullogs, String mhistory, boolean isRepeatedCall) {
-        Logs logs = new Logs(fullogs);
-        Logs history = new Logs(mhistory);
-        String nickname = logs.getNickname();
-        int reports = logs.countOfReports();
-        int warns = logs.countOfWarns();
-        int bans = history.countOfBans();
-        int mutes = history.countOfMutes();
-        String unbannedPlayers = logs.findPlayersWithRemovedPunish("/unban ");
-        String unmutedPlayers = logs.findPlayersWithRemovedPunish("/unmute ");
-        if (nickname.isEmpty()) {
-            TelegramBot.sendMessage("Страница пуста и/или указан некорректный адрес.\n");
-        } else if (reports == 0 && warns == 0 && bans == 0 && mutes == 0 && !isRepeatedCall) {
-            collectStatistic(mhistory, fullogs, true);
-        } else {
-            sendStatistic(nickname, bans, mutes, reports, warns, unbannedPlayers, unmutedPlayers);
-        }
-    }
-
-    private void sendStatistic(String nickname, int bans, int mutes, int reports, int warns, String unbannedPlayers, String unmutedPlayers) {
-        TelegramBot.sendMessage("Статистика " + nickname + "\n" +
-                (reports != 0 ? "Репорты: " + reports + "\n" : "Нет разобранных репортов\n") +
-                (mutes != 0 ? "Муты: " + mutes + "\n" : "Нет выданных мутов\n") +
-                (bans != 0 ? "Баны: " + bans + "\n" : "Нет выданных банов\n") +
-                (warns != 0 ? "Варны: " + warns + "\n" : "Нет выданных варнов\n") +
-                (!unbannedPlayers.isEmpty() ? "\nСписок разбаненных игроков:\n" + unbannedPlayers : "") +
-                (!unmutedPlayers.isEmpty() ? "\nСписок размученных игроков:\n" + unmutedPlayers : ""));
     }
 }
